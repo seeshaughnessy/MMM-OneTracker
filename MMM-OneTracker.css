@@ -1,0 +1,48 @@
+/* Copy and paste any or all of these css entries into your custom.css file inside your
+ * css folder. The functions are annotated to make things as easy as possible for you.
+ * Use any colors you want! For example - "http://htmlcolorcodes.com/color-picker/"
+ * Pick your color, copy and paste the HEX number. Example - #62FF00 = bright green.
+ */
+
+.MMM-OneTracker {
+  font-family: 'Roboto Condensed', sans-serif;
+  color: #ffffff; /* Color the ID #. Default is white. */
+  font-size: 16px; /* Adjust to your liking, line by line */
+}
+
+.header {
+  color: #aaa; /* Color the title text. Default is white. */
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.parcel-wrapper {
+  background-color: #333;
+  border-radius: 15px;
+  padding: 20px;
+  margin: 20px 0;
+  display: flex;
+  align-items: center;
+}
+
+/* Left flex content */
+.date-wrapper {
+  font-size: 65px;
+  width: 65px;
+  display: flex;
+  line-height: 1;
+  margin: 0 10px;
+  justify-content: space-around;
+  align-items: center;
+  flex-direction: column;
+}
+.expected_delivery_label {
+  font-size: 16px;
+}
+
+/* Right flex content */
+.data-wrapper {
+  text-align: left;
+  margin: 0 10px;
+  overflow: hidden;
+}
