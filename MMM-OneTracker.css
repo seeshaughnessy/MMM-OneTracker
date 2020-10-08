@@ -17,24 +17,31 @@
 }
 
 .parcel-wrapper {
-  background-color: #333;
-  border-radius: 15px;
-  padding: 20px;
-  margin: 20px 0;
+  /* background-color: #333; */
+  border-bottom: 0.5px solid #666;
+  padding: 10px 0;
   display: flex;
   align-items: center;
 }
 
+.parcel-wrapper:last-child {
+  border: none;
+}
+
 /* Left flex content */
 .date-wrapper {
-  font-size: 65px;
-  width: 65px;
+  font-size: 50px;
+  max-width: 50px;
   display: flex;
   line-height: 1;
-  margin: 0 10px;
   justify-content: space-around;
   align-items: center;
   flex-direction: column;
+  flex-basis: 20%;
+}
+
+.date-wrapper .fa {
+  font-size: 40px;
 }
 .expected_delivery_label {
   font-size: 16px;
@@ -43,6 +50,6 @@
 /* Right flex content */
 .data-wrapper {
   text-align: left;
-  margin: 0 10px;
+  margin-left: 15px;
   overflow: hidden;
 }

@@ -14,6 +14,7 @@ module.exports = NodeHelper.create({
   },
 
   getOneTracker: async function () {
+    // Authenticate and get token
     try {
       const response = await axios({
         method: 'post',
@@ -25,6 +26,7 @@ module.exports = NodeHelper.create({
       });
       const authToken = await response.data.session.token;
 
+      // GET parcels
       try {
         const res = await axios({
           method: 'get',
@@ -33,26 +35,34 @@ module.exports = NodeHelper.create({
             'x-api-token': authToken,
           },
         });
-        const result = res.data.parcels;
-        // console.warn('Result: ' + result); // check
+        let result = res.data.parcels;
+        // console.log('Result: ' + result); // check
 
-        // Check for only current packages
-        const currentParcels = result.filter((parcel) => {
-          const deliveredDate = new Date(
-            parcel.tracking_time_estimated
-          ).toDateString();
-          const today = new Date().toDateString();
-          if (parcel.tracking_status == 'in_transit')
-            return deliveredDate > today;
-        });
-
-        this.sendSocketNotification('ONETRACKER_RESULT', result);
+        let filteredParcels = result.filter((parcel) =>
+          this.getDaysToReceive(parcel)
+        );
+        this.sendSocketNotification('ONETRACKER_RESULT', filteredParcels);
       } catch (error) {
         console.log('Get Error: ' + error);
       }
     } catch (error) {
       console.log('Post Error: ' + error);
     }
+  },
+
+  // Returns days left until delivery, null if delivered 1+ days ago, and ? if delivery is unknown
+  getDaysToReceive: function (parcel) {
+    const parcelStatus = parcel.tracking_status;
+    const parcelDate = parcel.tracking_time_estimated;
+    const parcelDay = parcelDate.substr(8, 2); //Get day from tracking data
+    var today = new Date().toString().substr(8, 2); //Get todays date
+    const daysToDelivery = parcelDay - today;
+
+    if (parcelStatus != 'delivered' && daysToDelivery < 0) return '?';
+    if (parcelStatus != 'delivered' && daysToDelivery >= 0)
+      return daysToDelivery;
+    if (parcelStatus == 'delivered' && daysToDelivery == 0) return '0';
+    return;
   },
 
   socketNotificationReceived: function (notification, payload) {

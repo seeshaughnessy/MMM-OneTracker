@@ -15,11 +15,9 @@ Module.register('MMM-OneTracker', {
     animationSpeed: 3000, // fade speed
     initialLoadDelay: 3250,
     retryDelay: 2500,
-    rotateInterval: 30 * 1000, // 30 second rotation of items
     updateInterval: 10 * 60 * 1000, // 10 minutes
     apiLanguage: 'en',
-    dateTimeFormat: 'ddd, MMM DD, YYYY, h:mm a',
-    dateFormat: 'ddd, MMM DD, YYYY',
+    maxParcels: 5,
   },
 
   getStyles: function () {
@@ -34,17 +32,10 @@ Module.register('MMM-OneTracker', {
       //  Set locale.
       (this.url = '');
     this.OneTracker = {};
-    this.activeItem = 0;
-    this.rotateInterval = null;
     this.scheduleUpdate();
   },
 
   getDom: function () {
-    const status = {
-      in_transit: 'In Transit',
-      delivered: 'Delivered',
-    };
-
     var wrapper = document.createElement('div');
     wrapper.className = 'wrapper';
     wrapper.style.maxWidth = this.config.maxWidth;
@@ -57,7 +48,7 @@ Module.register('MMM-OneTracker', {
 
     if (this.config.useHeader != false) {
       var header = document.createElement('header');
-      header.classList.add('header');
+      header.classList.add('header', 'small', 'dimmed', 'bold');
       header.innerHTML =
         this.config.header + ' (' + this.OneTracker.length + ')';
       wrapper.appendChild(header);
@@ -67,20 +58,16 @@ Module.register('MMM-OneTracker', {
     if (this.OneTracker.length != 0) {
       //	Rotating my data
       var OneTracker = this.OneTracker;
-      var OneTrackerKeys = Object.keys(this.OneTracker);
-      if (OneTrackerKeys.length > 0) {
-        if (this.activeItem >= OneTrackerKeys.length) {
-          this.activeItem = 0;
-        }
-        // var OneTracker = this.OneTracker[OneTrackerKeys[this.activeItem]];
-        //	console.log(this.OneTracker); // for checking
 
-        // My data begins here
-        OneTracker.forEach((parcel) => {
+      // My data begins here
+      OneTracker.forEach((parcel, index) => {
+        // Limit packages via config maxParcels
+        if (index < this.config.maxParcels) {
           var top = document.createElement('div');
           top.classList.add('list-row');
 
           // Format package data
+
           var parcelWrapper = document.createElement('div');
           parcelWrapper.classList.add('parcel-wrapper');
           wrapper.appendChild(parcelWrapper);
@@ -93,6 +80,41 @@ Module.register('MMM-OneTracker', {
           dataWrapper.classList.add('data-wrapper');
           parcelWrapper.appendChild(dataWrapper);
 
+          // expected_delivery date
+          var expectedDelivery = document.createElement('div');
+          expectedDelivery.classList.add('bright', 'expected_delivery');
+
+          var expectedDeliveryLabel = document.createElement('div');
+          expectedDeliveryLabel.classList.add(
+            'bright',
+            'expected_delivery_label'
+          );
+
+          // Calculate days left
+          const daysToReceive = this.getDaysToReceive(parcel);
+
+          if (parcel.tracking_status == 'delivered')
+            expectedDelivery.innerHTML =
+              '<i class="fa fa-check-circle" aria-hidden="true"></i>';
+          else if (daysToReceive == '?')
+            expectedDelivery.innerHTML =
+              '<i class="fa fa-truck" aria-hidden="true"></i>';
+          else expectedDelivery.innerHTML = daysToReceive;
+
+          dateWrapper.appendChild(expectedDelivery);
+
+          if (
+            (daysToReceive == '0' && parcel.tracking_status != 'delivered') ||
+            daysToReceive > 1
+          ) {
+            expectedDeliveryLabel.innerText = 'Days';
+            dateWrapper.appendChild(expectedDeliveryLabel);
+          }
+          if (daysToReceive == 1) {
+            expectedDeliveryLabel.innerText = 'Day';
+            dateWrapper.appendChild(expectedDeliveryLabel);
+          }
+
           // Title of shipment (if any)
           var Title = document.createElement('div');
           var description = parcel.description
@@ -102,87 +124,27 @@ Module.register('MMM-OneTracker', {
           Title.innerHTML = description;
           dataWrapper.appendChild(Title);
 
-          // // ID of shipment
-          // var ID = document.createElement('div');
-          // ID.classList.add('xsmall', 'bright', 'ID');
-          // ID.innerHTML = 'ID: ' + parcel.id;
-          // dataWrapper.appendChild(ID);
-
-          // // Last update on shipment
-          // var lastUpdate = document.createElement('div');
-          // lastUpdate.classList.add('xsmall', 'bright', 'lastUpdate');
-          // lastUpdate.innerHTML =
-          //   'Updated: ' +
-          //   moment(parcel.last_updated_at)
-          //     .local()
-          //     .format(this.config.dateTimeFormat);
-          // dataWrapper.appendChild(lastUpdate);
-
-          // // tracking number of shipment
-          // var tracking_number = document.createElement('div');
-          // tracking_number.classList.add('xsmall', 'bright', 'tracking_number');
-          // tracking_number.innerHTML = '#' + parcel.tracking_id;
-          // dataWrapper.appendChild(tracking_number);
-
-          // // Courier name
-          // var slug = document.createElement('div');
-          // slug.classList.add('xsmall', 'bright', 'courier');
-          // slug.innerHTML = 'Courier: ' + parcel.carrier;
-          // dataWrapper.appendChild(slug);
-
-          // expected_delivery date
-          var parcelDate = moment('2020-10-13T00:00:00Z');
-          var today = moment(Date.now());
-          // console.log(parcelDate, today);
-
-          const daysToDelivery =
-            parcel.tracking_time_estimated == '1001-01-01T00:00:00Z'
-              ? '?'
-              : today.diff(parcelDate, 'days');
-
-          var expectedDelivery = document.createElement('div');
-          expectedDelivery.classList.add('bright', 'expected_delivery');
-
-          var expectedDeliveryLabel = document.createElement('div');
-          expectedDeliveryLabel.classList.add('expected_delivery_label');
-          expectedDeliveryLabel.innerText =
-            daysToDelivery == 1 ? 'Day' : 'Days';
-
-          expectedDelivery.innerHTML = daysToDelivery;
-
-          if (parcel.tracking_status != 'delivered') {
-            dateWrapper.appendChild(expectedDelivery);
-            dateWrapper.appendChild(expectedDeliveryLabel);
-          } else {
-            expectedDelivery.innerText = 'D';
-            dateWrapper.appendChild(expectedDelivery);
-          }
-
           // status of shipment
-          var tag = document.createElement('div');
-          tag.classList.add('xsmall', 'bright', 'status');
-          tag.innerHTML = `${status[parcel.tracking_status]}: ${
-            parcel.tracking_location
-          }`;
-          dataWrapper.appendChild(tag);
-          console.log(parcel); // check
+          const location = parcel.tracking_location;
+          const statusReadable = parcel.tracking_status_readable;
 
-          // // tracking_location
-          // const location = OneTracker.tracking_location;
+          var locationDiv = document.createElement('div');
+          locationDiv.classList.add('xsmall', 'dimmed');
 
-          // var locationView = document.createElement('div');
-          // locationView.classList.add('xsmall', 'bright', 'shipment_type');
-          // if (location !== '') {
-          //   locationView.innerHTML = 'Location: ' + location;
-          // }
-          // dataWrapper.appendChild(locationView);
-        });
-      } // <-- closes rotation
+          var statusDiv = document.createElement('div');
+          statusDiv.classList.add('xsmall', 'dimmed');
+
+          if (statusReadable !== '')
+            statusDiv.innerHTML = `<i class="fa fa-calendar" aria-hidden="true"></i>  ${parcel.tracking_status_readable}`;
+          if (location != '')
+            locationDiv.innerHTML += `<i class="fa fa-map-marker" aria-hidden="true"></i>  ${parcel.tracking_location}`;
+          dataWrapper.appendChild(locationDiv);
+          dataWrapper.appendChild(statusDiv);
+        } // Parcel limit
+      }); // Loop through parcles
 
       return wrapper;
     } else {
-      // From deliveries pending if statement above
-
       // When there are no pending deliveries, do the following
       var top = document.createElement('div');
       top.classList.add('list-row');
@@ -221,14 +183,6 @@ Module.register('MMM-OneTracker', {
     this.loaded = true;
   },
 
-  scheduleCarousel: function () {
-    //  console.log("Carousel of OneTracker fucktion!"); // for cheking //
-    this.rotateInterval = setInterval(() => {
-      this.activeItem++;
-      this.updateDom(this.config.animationSpeed);
-    }, this.config.rotateInterval);
-  },
-
   scheduleUpdate: function () {
     setInterval(() => {
       console.log('scheduleUpdate');
@@ -242,13 +196,24 @@ Module.register('MMM-OneTracker', {
     this.sendSocketNotification('GET_ONETRACKER');
   },
 
+  getDaysToReceive: function (parcel) {
+    const parcelStatus = parcel.tracking_status;
+    const parcelDate = parcel.tracking_time_estimated;
+    const parcelDay = parcelDate.substr(8, 2); //Get day from tracking data
+    var today = new Date().toString().substr(8, 2); //Get todays date
+    const daysToDelivery = parcelDay - today;
+
+    if (parcelStatus != 'delivered' && daysToDelivery < 0) return '?';
+    if (parcelStatus != 'delivered' && daysToDelivery >= 0)
+      return daysToDelivery;
+    if (parcelStatus == 'delivered' && daysToDelivery == 0) return '0';
+    return;
+  },
+
   socketNotificationReceived: function (notification, payload) {
     console.warn('notification received ', notification);
     if (notification === 'ONETRACKER_RESULT') {
       this.processOneTracker(payload);
-      if (this.rotateInterval == null) {
-        this.scheduleCarousel();
-      }
       this.updateDom(this.config.animationSpeed);
     }
 
