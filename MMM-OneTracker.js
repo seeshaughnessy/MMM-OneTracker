@@ -129,10 +129,10 @@ Module.register('MMM-OneTracker', {
           const statusReadable = parcel.tracking_status_readable;
 
           var locationDiv = document.createElement('div');
-          locationDiv.classList.add('xsmall', 'dimmed');
+          locationDiv.classList.add('xsmall', 'no-wrap', 'dimmed');
 
           var statusDiv = document.createElement('div');
-          statusDiv.classList.add('xsmall', 'dimmed');
+          statusDiv.classList.add('xsmall', 'no-wrap', 'dimmed');
 
           if (statusReadable !== '')
             statusDiv.innerHTML = `<i class="fa fa-calendar" aria-hidden="true"></i>  ${parcel.tracking_status_readable}`;
@@ -192,7 +192,6 @@ Module.register('MMM-OneTracker', {
   },
 
   getOneTracker: function () {
-    Log.error('GET_ONETRACKER');
     this.sendSocketNotification('GET_ONETRACKER');
   },
 

@@ -5,49 +5,53 @@
  *
  */
 const NodeHelper = require('node_helper');
-const axios = require('axios');
-const moment = require('moment');
+const request = require('request');
 
 module.exports = NodeHelper.create({
   start: function () {
     console.log('Starting node_helper for: ' + this.name);
   },
 
-  getOneTracker: async function () {
+  getOneTracker: function () {
     // Authenticate and get token
-    try {
-      const response = await axios({
-        method: 'post',
-        url: 'https://api.onetracker.app/auth/token',
-        data: {
-          email: this.config.username,
-          password: this.config.password,
-        },
-      });
-      const authToken = await response.data.session.token;
+    let self = this;
 
-      // GET parcels
-      try {
-        const res = await axios({
-          method: 'get',
-          url: 'https://api.onetracker.app/parcels',
+    var options = {
+      uri: 'https://api.onetracker.app/auth/token',
+      method: 'POST',
+      json: {
+        email: this.config.username,
+        password: this.config.password,
+      },
+    };
+
+    request(options, function (error, response, body) {
+      if (!error && response.statusCode == 200) {
+        const authToken = body.session.token;
+
+        const options = {
+          uri: 'https://api.onetracker.app/parcels',
+          method: 'GET',
+          json: true,
           headers: {
             'x-api-token': authToken,
           },
-        });
-        let result = res.data.parcels;
-        // console.log('Result: ' + result); // check
+        };
 
-        let filteredParcels = result.filter((parcel) =>
-          this.getDaysToReceive(parcel)
-        );
-        this.sendSocketNotification('ONETRACKER_RESULT', filteredParcels);
-      } catch (error) {
-        console.log('Get Error: ' + error);
+        request(options, function (error, response, body) {
+          if (!error && response.statusCode == 200) {
+            let result = body.parcels;
+            // console.log('Result: ', result); // check
+
+            const filteredParcels = result.filter((parcel) =>
+              self.getDaysToReceive(parcel)
+            );
+
+            self.sendSocketNotification('ONETRACKER_RESULT', filteredParcels);
+          }
+        });
       }
-    } catch (error) {
-      console.log('Post Error: ' + error);
-    }
+    });
   },
 
   // Returns days left until delivery, null if delivered 1+ days ago, and ? if delivery is unknown
@@ -58,11 +62,13 @@ module.exports = NodeHelper.create({
     var today = new Date().toString().substr(8, 2); //Get todays date
     const daysToDelivery = parcelDay - today;
 
+    // console.log(parcelStatus, parcelDay, daysToDelivery); // check
+
     if (parcelStatus != 'delivered' && daysToDelivery < 0) return '?';
     if (parcelStatus != 'delivered' && daysToDelivery >= 0)
       return daysToDelivery;
     if (parcelStatus == 'delivered' && daysToDelivery == 0) return '0';
-    return;
+    return null;
   },
 
   socketNotificationReceived: function (notification, payload) {
