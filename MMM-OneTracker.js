@@ -103,9 +103,10 @@ Module.register('MMM-OneTracker', {
 
           dateWrapper.appendChild(expectedDelivery);
 
+          // Show delivery if not delivered or delivered today
           if (
             (daysToReceive == '0' && parcel.tracking_status != 'delivered') ||
-            daysToReceive > 1
+            daysToReceive >= 1
           ) {
             expectedDeliveryLabel.innerText = 'Days';
             dateWrapper.appendChild(expectedDeliveryLabel);
