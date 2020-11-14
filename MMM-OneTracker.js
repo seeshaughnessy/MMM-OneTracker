@@ -91,7 +91,8 @@ Module.register('MMM-OneTracker', {
           );
 
           // Calculate days left
-          const daysToReceive = this.getDaysToReceive(parcel);
+          const daysToReceive = parcel.daysToReceive;
+          console.log(daysToReceive);
 
           if (parcel.tracking_status == 'delivered')
             expectedDelivery.innerHTML =
@@ -104,23 +105,17 @@ Module.register('MMM-OneTracker', {
           dateWrapper.appendChild(expectedDelivery);
 
           // Show delivery if not delivered or delivered today
-          if (
-            (daysToReceive == '0' && parcel.tracking_status != 'delivered') ||
-            daysToReceive >= 1
-          ) {
-            expectedDeliveryLabel.innerText = 'Days';
-            dateWrapper.appendChild(expectedDeliveryLabel);
+          if (parcel.tracking_status !== 'delivered') {
+            if (daysToReceive >= 0) expectedDeliveryLabel.innerText = 'Days';
+            if (daysToReceive == 1) expectedDeliveryLabel.innerText = 'Day';
           }
-          if (daysToReceive == 1) {
-            expectedDeliveryLabel.innerText = 'Day';
-            dateWrapper.appendChild(expectedDeliveryLabel);
-          }
+          dateWrapper.appendChild(expectedDeliveryLabel);
 
           // Title of shipment (if any)
           var Title = document.createElement('div');
           var description = parcel.description
             ? `${parcel.description} (${parcel.carrier})`
-            : `From ${parcel.carrier} (#${parcel.tracking_id})`;
+            : `${parcel.carrier} (#${parcel.tracking_id})`;
           Title.classList.add('small', 'bright', 'no-wrap', 'Title');
           Title.innerHTML = description;
           dataWrapper.appendChild(Title);
@@ -196,19 +191,21 @@ Module.register('MMM-OneTracker', {
     this.sendSocketNotification('GET_ONETRACKER');
   },
 
-  getDaysToReceive: function (parcel) {
-    const parcelStatus = parcel.tracking_status;
-    const parcelDate = parcel.tracking_time_estimated;
-    const parcelDay = parcelDate.substr(8, 2); //Get day from tracking data
-    var today = new Date().toString().substr(8, 2); //Get todays date
-    const daysToDelivery = parcelDay - today;
+  // getDaysToReceive: function (parcel) {
+  //   const parcelStatus = parcel.tracking_status;
+  //   const parcelDate = parcel.tracking_time_estimated;
+  //   const parcelDay = parcelDate.substr(8, 2); //Get day from tracking data
+  //   var today = new Date().toString().substr(8, 2); //Get todays date
+  //   const daysToDelivery = parcelDay - today;
 
-    if (parcelStatus != 'delivered' && daysToDelivery < 0) return '?';
-    if (parcelStatus != 'delivered' && daysToDelivery >= 0)
-      return daysToDelivery;
-    if (parcelStatus == 'delivered' && daysToDelivery == 0) return '0';
-    return;
-  },
+  //   if (parcelStatus != 'delivered') {
+  //     if (daysToDelivery < 0) return '?';
+  //     if (daysToDelivery >= 0) return daysToDelivery;
+  //   } else if (parcelStatus == 'delivered') {
+  //     if (daysToDelivery == 0) return '0';
+  //   }
+  //   return;
+  // },
 
   socketNotificationReceived: function (notification, payload) {
     console.warn('notification received ', notification);

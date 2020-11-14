@@ -4,12 +4,29 @@
  * By Mykle1
  *
  */
+const { forEach } = require('lodash');
 const NodeHelper = require('node_helper');
 const request = require('request');
 
 module.exports = NodeHelper.create({
   start: function () {
     console.log('Starting node_helper for: ' + this.name);
+  },
+
+  getDaysToReceive: function (parcel) {
+    const parcelStatus = parcel.tracking_status;
+    const parcelDate = parcel.tracking_time_estimated;
+    const parcelDay = parcelDate.substr(8, 2); //Get day from tracking data
+    var today = new Date().toString().substr(8, 2); //Get todays date
+    const daysToDelivery = parcelDay - today;
+
+    if (parcelStatus != 'delivered') {
+      if (daysToDelivery < 0) return '?';
+      if (daysToDelivery >= 0) return daysToDelivery;
+    } else if (parcelStatus == 'delivered') {
+      if (daysToDelivery == 0) return '0';
+    }
+    return false;
   },
 
   getOneTracker: function () {
@@ -40,11 +57,13 @@ module.exports = NodeHelper.create({
 
         request(options, function (error, response, body) {
           if (!error && response.statusCode == 200) {
-            let result = body.parcels;
+            let results = body.parcels;
             // console.log('Result: ', result); // check
-
-            const filteredParcels = result.filter((parcel) =>
-              self.getDaysToReceive(parcel)
+            results.forEach((result) => {
+              result.daysToReceive = self.getDaysToReceive(result);
+            });
+            const filteredParcels = results.filter(
+              (parcel) => parcel.daysToReceive !== false
             );
 
             self.sendSocketNotification('ONETRACKER_RESULT', filteredParcels);
@@ -55,21 +74,6 @@ module.exports = NodeHelper.create({
   },
 
   // Returns days left until delivery, null if delivered 1+ days ago, and ? if delivery is unknown
-  getDaysToReceive: function (parcel) {
-    const parcelStatus = parcel.tracking_status;
-    const parcelDate = parcel.tracking_time_estimated;
-    const parcelDay = parcelDate.substr(8, 2); //Get day from tracking data
-    var today = new Date().toString().substr(8, 2); //Get todays date
-    const daysToDelivery = parcelDay - today;
-
-    // console.log(parcelStatus, parcelDay, daysToDelivery); // check
-
-    if (parcelStatus != 'delivered' && daysToDelivery < 0) return '?';
-    if (parcelStatus != 'delivered' && daysToDelivery >= 0)
-      return daysToDelivery;
-    if (parcelStatus == 'delivered' && daysToDelivery == 0) return '0';
-    return null;
-  },
 
   socketNotificationReceived: function (notification, payload) {
     if (notification === 'CONFIG') {
