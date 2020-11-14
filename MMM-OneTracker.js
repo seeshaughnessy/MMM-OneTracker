@@ -191,22 +191,6 @@ Module.register('MMM-OneTracker', {
     this.sendSocketNotification('GET_ONETRACKER');
   },
 
-  // getDaysToReceive: function (parcel) {
-  //   const parcelStatus = parcel.tracking_status;
-  //   const parcelDate = parcel.tracking_time_estimated;
-  //   const parcelDay = parcelDate.substr(8, 2); //Get day from tracking data
-  //   var today = new Date().toString().substr(8, 2); //Get todays date
-  //   const daysToDelivery = parcelDay - today;
-
-  //   if (parcelStatus != 'delivered') {
-  //     if (daysToDelivery < 0) return '?';
-  //     if (daysToDelivery >= 0) return daysToDelivery;
-  //   } else if (parcelStatus == 'delivered') {
-  //     if (daysToDelivery == 0) return '0';
-  //   }
-  //   return;
-  // },
-
   socketNotificationReceived: function (notification, payload) {
     console.warn('notification received ', notification);
     if (notification === 'ONETRACKER_RESULT') {
