@@ -57,6 +57,7 @@ module.exports = NodeHelper.create({
     });
   },
 
+  // Returns days left until delivery, false if delivered 1+ days ago, and ? if delivery is unknown
   getDaysToReceive: function (parcel) {
     const parcelStatus = parcel.tracking_status;
     const parcelDate = parcel.tracking_time_estimated;
@@ -64,7 +65,7 @@ module.exports = NodeHelper.create({
     var today = new Date().toString().substr(8, 2); //Get todays date
     const daysToDelivery = parcelDay - today;
 
-    if (parcelStatus != 'delivered') {
+    if (parcelStatus !== 'delivered') {
       if (daysToDelivery < 0) return '?';
       if (daysToDelivery >= 0) return daysToDelivery;
     } else if (parcelStatus == 'delivered') {
@@ -72,8 +73,6 @@ module.exports = NodeHelper.create({
     }
     return false;
   },
-
-  // Returns days left until delivery, null if delivered 1+ days ago, and ? if delivery is unknown
 
   socketNotificationReceived: function (notification, payload) {
     if (notification === 'CONFIG') {
