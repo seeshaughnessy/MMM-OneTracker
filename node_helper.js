@@ -1,7 +1,7 @@
 /* Magic Mirror
  * Module: MMM-OneTracker
  *
- * By Mykle1
+ * By seeshaughnessy via fork by Mykle1
  *
  */
 const { forEach } = require('lodash');
@@ -65,11 +65,11 @@ module.exports = NodeHelper.create({
     var today = new Date().toString().substr(8, 2); //Get todays date
     const daysToDelivery = parcelDay - today;
 
-    if (parcelStatus !== 'delivered') {
+    if (parcelStatus == 'delivered') {
+      return  (daysToDelivery == 0) ? '0' : false;
+    } else {
       if (daysToDelivery < 0) return '?';
       if (daysToDelivery >= 0) return daysToDelivery;
-    } else if (parcelStatus == 'delivered') {
-      if (daysToDelivery == 0) return '0';
     }
     return false;
   },
