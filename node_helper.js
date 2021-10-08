@@ -4,9 +4,11 @@
  * By seeshaughnessy via fork by Mykle1
  *
  */
+
 const { forEach } = require('lodash');
 const NodeHelper = require('node_helper');
 const request = require('request');
+const sampleJson = require('./json_response.json');
 
 module.exports = NodeHelper.create({
   start: function () {
@@ -42,6 +44,7 @@ module.exports = NodeHelper.create({
         request(options, function (error, response, body) {
           if (!error && response.statusCode == 200) {
             let results = body.parcels;
+            // let results = sampleJson.parcels; // Test using json_response.json
             // console.log('Result: ', result); // check
             results.forEach((result) => {
               result.daysToReceive = self.getDaysToReceive(result);
@@ -60,16 +63,19 @@ module.exports = NodeHelper.create({
   // Returns days left until delivery, false if delivered 1+ days ago, and ? if delivery is unknown
   getDaysToReceive: function (parcel) {
     const parcelStatus = parcel.tracking_status;
-    const parcelDate = parcel.tracking_time_estimated;
-    const parcelDay = parcelDate.substr(8, 2); //Get day from tracking data
-    var today = new Date().toString().substr(8, 2); //Get todays date
-    const daysToDelivery = parcelDay - today;
+    const parcelString = parcel.tracking_time_estimated;
+
+    // Calculate daysToDelivery
+    const parcelDate = new Date(parcelString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Set today's time to 0, so delivery doesn't show partial day
+    const diffInTime = parcelDate.getTime() - today.getTime();
+    const daysToDelivery = Math.round(diffInTime / (1000 * 3600 * 24));
 
     if (parcelStatus == 'delivered') {
-      return  (daysToDelivery == 0) ? '0' : false;
+      return daysToDelivery == 0 ? '0' : false;
     } else {
-      if (daysToDelivery < 0) return '?';
-      if (daysToDelivery >= 0) return daysToDelivery;
+      return daysToDelivery < 0 ? '?' : daysToDelivery;
     }
     return false;
   },

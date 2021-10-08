@@ -46,16 +46,17 @@ Module.register('MMM-OneTracker', {
       return wrapper;
     }
 
-    if (this.config.useHeader != false) {
-      var header = document.createElement('header');
-      header.classList.add('header', 'small', 'dimmed', 'bold');
-      header.innerHTML =
-        this.config.header + ' (' + this.OneTracker.length + ')';
-      wrapper.appendChild(header);
-    }
-
     // If there are deliveries pending, go through all the data
     if (this.OneTracker.length != 0) {
+      //  Header
+      if (this.config.useHeader != false) {
+        var header = document.createElement('header');
+        header.classList.add('header', 'small', 'dimmed', 'bold');
+        header.innerHTML =
+          this.config.header + ' (' + this.OneTracker.length + ')';
+        wrapper.appendChild(header);
+      }
+
       //	Rotating my data
       var OneTracker = this.OneTracker;
 
@@ -141,21 +142,14 @@ Module.register('MMM-OneTracker', {
 
       return wrapper;
     } else {
-      // When there are no pending deliveries, do the following
-      var top = document.createElement('div');
-      top.classList.add('list-row');
-
-      // When no deliveries are pending
-      var nothing = document.createElement('div');
-      nothing.classList.add('small', 'bright', 'nothing');
-      nothing.innerHTML = 'No deliveries pending!';
-      wrapper.appendChild(nothing);
-
-      // Current date and time (wherever you are)
-      var date = document.createElement('div');
-      date.classList.add('small', 'bright', 'date');
-      date.innerHTML = moment().local().format(this.config.dateTimeFormat);
-      wrapper.appendChild(date);
+      // When there are no pending deliveries, remove the header
+      if (this.config.useHeader != true) {
+        var header = document.createElement('header');
+        header.classList.add('header', 'small', 'dimmed');
+        header.innerHTML =
+          this.config.header + ' (' + this.OneTracker.length + ')';
+        wrapper.appendChild(header);
+      }
     } // Closes else statement from deliveries pending if statement above
 
     return wrapper;
