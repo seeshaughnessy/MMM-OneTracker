@@ -7,57 +7,71 @@
 
 const { forEach } = require('lodash');
 const NodeHelper = require('node_helper');
-const request = require('request');
+const fetch = require('node-fetch');
 const sampleJson = require('./json_response.json');
+const Log = require("logger");
 
 module.exports = NodeHelper.create({
   start: function () {
-    console.log('Starting node_helper for: ' + this.name);
+    Log.info('Starting node_helper for: ' + this.name);
   },
 
   getOneTracker: function () {
     // Authenticate and get token
     let self = this;
 
-    var options = {
-      uri: 'https://api.onetracker.app/auth/token',
-      method: 'POST',
-      json: {
-        email: this.config.username,
-        password: this.config.password,
-      },
+    var authBody = {
+      email: this.config.username,
+      password: this.config.password,
     };
 
-    request(options, function (error, response, body) {
-      if (!error && response.statusCode == 200) {
-        const authToken = body.session.token;
+    try {
+      fetch('https://api.onetracker.app/auth/token', {
+        method: 'post',
+        body: JSON.stringify(authBody),
+        headers: { 'Content-Type': 'application/json' }
+      })
+      .then(self.checkFetchStatus)
+      .then((response) => response.json())
+      .then((responseData) => {
 
-        const options = {
-          uri: 'https://api.onetracker.app/parcels',
-          method: 'GET',
-          json: true,
+        const authData = responseData;
+        var authToken = authData.session.token;
+
+        fetch('https://api.onetracker.app/parcels', {
+          method: 'get',
           headers: {
             'x-api-token': authToken,
-          },
-        };
-
-        request(options, function (error, response, body) {
-          if (!error && response.statusCode == 200) {
-            let results = body.parcels;
-            // let results = sampleJson.parcels; // Test using json_response.json
-            // console.log('Result: ', result); // check
-            results.forEach((result) => {
-              result.daysToReceive = self.getDaysToReceive(result);
-            });
-            const filteredParcels = results.filter(
-              (parcel) => parcel.daysToReceive !== false
-            );
-
-            self.sendSocketNotification('ONETRACKER_RESULT', filteredParcels);
           }
+        })
+        .then(self.checkFetchStatus)
+        .then((trackResponse) => trackResponse.json())
+        .then((trackData) => {
+          let results = trackData.parcels;
+          // let results = sampleJson.parcels; // Test using json_response.json
+          // console.log('Result: ', result); // check
+          results.forEach((result) => {
+            result.daysToReceive = self.getDaysToReceive(result);
+          });
+          const filteredParcels = results.filter(
+            (parcel) => parcel.daysToReceive !== false
+          );
+
+          self.sendSocketNotification('ONETRACKER_RESULT', filteredParcels);
         });
-      }
-    });
+      })
+    }
+    catch (error) {
+      Log.error("Error fetching parcel status:" + error);
+    }
+  },
+
+  checkFetchStatus: function(response) {
+    if (response.ok) {
+      return response;
+    } else {
+      throw Error(response.statusText);
+    }
   },
 
   // Returns days left until delivery, false if delivered 1+ days ago, and ? if delivery is unknown
@@ -84,7 +98,7 @@ module.exports = NodeHelper.create({
     if (notification === 'CONFIG') {
       this.config = payload;
     } else if (notification === 'GET_ONETRACKER') {
-      // console.log('Notification received');
+      Log.info('Processing GET_ONETRACKER notification');
       this.getOneTracker();
     }
   },
