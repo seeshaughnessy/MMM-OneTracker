@@ -7,7 +7,6 @@
 
 const { forEach } = require('lodash');
 const NodeHelper = require('node_helper');
-const fetch = require('node-fetch');
 const sampleJson = require('./json_response.json');
 const Log = require("logger");
 
